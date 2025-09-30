@@ -1,0 +1,17 @@
+[Unit]
+Description=QKEY Server
+After=network.target
+Documentation=https://berry-japan.com
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/qkey --gateway
+WorkingDirectory=/var/lib/qkey
+User=root
+Group=root
+Restart=always
+RestartSec=5
+Environment="RUST_LOG=off"
+
+[Install]
+WantedBy=multi-user.target
