@@ -1692,7 +1692,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1c406a8d3cdec6393dc8975b623d806ce2d586653c620f86f7fab2e043df1cb2"
 dependencies = [
  "hax-lib",
- "pastey 0.2.2",
+ "pastey 0.2.3",
  "rand 0.10.1",
 ]
 
@@ -5591,9 +5591,9 @@ checksum = "35fb2e5f958ec131621fdd531e9fc186ed768cbe395337403ae56c17a74c68ec"
 
 [[package]]
 name = "pastey"
-version = "0.2.2"
+version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c5a797f0e07bdf071d15742978fc3128ec6c22891c31a3a931513263904c982a"
+checksum = "2ee67f1008b1ba2321834326597b8e186293b049a023cdef258527550b9935b4"
 
 [[package]]
 name = "pathdiff"
