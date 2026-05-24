@@ -25,7 +25,7 @@ toml = "*"
 
 [patch.crates-io]
 just-webrtc = { path = "libs/just-webrtc" }
-scrap = { path = "libs/scrap-patched" }
+scrap = { path = "libs/scrap" }
 
 [profile.small]
 inherits = "release"
