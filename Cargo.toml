@@ -7,6 +7,8 @@ members = [
     "qberry-wasm",
     "ps-core",
     "ps-wasm",
+    "qd-core",
+    "qd-wasm",
 ]
 resolver = "2"
 repository = "https://github.com/yui0/qkey"
