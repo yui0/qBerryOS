@@ -7,6 +7,8 @@ members = [
     "qberry-wasm",
     "ps-core",
     "ps-wasm",
+    "qd-core",
+    "qd-wasm",
 ]
 resolver = "2"
 repository = "https://github.com/yui0/qkey"
@@ -25,7 +27,7 @@ toml = "*"
 
 [patch.crates-io]
 just-webrtc = { path = "libs/just-webrtc" }
-scrap = { path = "libs/scrap-patched" }
+scrap = { path = "libs/scrap" }
 
 [profile.small]
 inherits = "release"
