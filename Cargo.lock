@@ -3302,7 +3302,7 @@ dependencies = [
  "fnv",
  "futures-core",
  "futures-sink",
- "http 1.4.0",
+ "http 1.4.1",
  "indexmap 2.14.0",
  "slab",
  "tokio",
@@ -3485,9 +3485,9 @@ dependencies = [
 
 [[package]]
 name = "http"
-version = "1.4.0"
+version = "1.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e3ba2a386d7f85a81f119ad7498ebe444d2e22c2af0b86b069416ace48b3311a"
+checksum = "8be7462df143984c4598a256ef469b251d7d7f9e271135073e78fc535414f3d0"
 dependencies = [
  "bytes",
  "itoa",
@@ -3500,7 +3500,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1efedce1fb8e6913f23e0c92de8e62cd5b772a67e7b3946df930a62566c93184"
 dependencies = [
  "bytes",
- "http 1.4.0",
+ "http 1.4.1",
 ]
 
 [[package]]
@@ -3511,7 +3511,7 @@ checksum = "b021d93e26becf5dc7e1b75b1bed1fd93124b374ceb73f43d4d4eafec896a64a"
 dependencies = [
  "bytes",
  "futures-core",
- "http 1.4.0",
+ "http 1.4.1",
  "http-body",
  "pin-project-lite",
 ]
@@ -3554,7 +3554,7 @@ dependencies = [
  "futures-channel",
  "futures-core",
  "h2 0.4.14",
- "http 1.4.0",
+ "http 1.4.1",
  "http-body",
  "httparse",
  "itoa",
@@ -3570,7 +3570,7 @@ version = "0.27.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "33ca68d021ef39cf6463ab54c1d0f5daf03377b70561305bb89a8f83aab66e0f"
 dependencies = [
- "http 1.4.0",
+ "http 1.4.1",
  "hyper",
  "hyper-util",
  "rustls",
@@ -3589,7 +3589,7 @@ dependencies = [
  "bytes",
  "futures-channel",
  "futures-util",
- "http 1.4.0",
+ "http 1.4.1",
  "http-body",
  "hyper",
  "ipnet",
@@ -3965,9 +3965,9 @@ dependencies = [
 
 [[package]]
 name = "jiff"
-version = "0.2.25"
+version = "0.2.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6835eea34fb6321b9b3aa7b685c2b433948c09447e389dc017fdf687d5d11e65"
+checksum = "30457d51cb0e68ee18184b30cd9eb8e1602a20837c321f6ea9706b94f1c681c3"
 dependencies = [
  "jiff-static",
  "log",
@@ -3978,9 +3978,9 @@ dependencies = [
 
 [[package]]
 name = "jiff-static"
-version = "0.2.25"
+version = "0.2.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3c22e04db9c58f5136eb1757f3d5c49a7b187f49e52185228cbd2f5acdfcc08c"
+checksum = "05f86e4f0326c61ae6c00b04d9009aaeda644d0b5bdfbf6c67247f492f42b3f3"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -6072,7 +6072,7 @@ dependencies = [
 
 [[package]]
 name = "ps-core"
-version = "2026.5.25"
+version = "2026.5.26"
 dependencies = [
  "fontdue",
  "gif 0.13.3",
@@ -6084,7 +6084,7 @@ dependencies = [
 
 [[package]]
 name = "ps-wasm"
-version = "2026.5.25"
+version = "2026.5.26"
 dependencies = [
  "console_error_panic_hook",
  "getrandom 0.4.2",
@@ -6124,13 +6124,14 @@ checksum = "e0c5ccf5294c6ccd63a74f1565028353830a9c2f5eb0c682c355c471726a6e3f"
 
 [[package]]
 name = "qberry-cli"
-version = "2026.5.25"
+version = "2026.5.26"
 dependencies = [
  "anyhow",
  "clap",
  "dirs 6.0.0",
  "env_logger 0.11.10",
  "fs2",
+ "log",
  "mimalloc",
  "open",
  "qberry-core",
@@ -6144,7 +6145,7 @@ dependencies = [
 
 [[package]]
 name = "qberry-core"
-version = "2026.5.25"
+version = "2026.5.26"
 dependencies = [
  "accessibility-sys",
  "actix",
@@ -6206,7 +6207,7 @@ dependencies = [
 
 [[package]]
 name = "qberry-gui"
-version = "2026.5.25"
+version = "2026.5.26"
 dependencies = [
  "anyhow",
  "clap",
@@ -6230,7 +6231,7 @@ dependencies = [
 
 [[package]]
 name = "qberry-wasm"
-version = "2026.5.25"
+version = "2026.5.26"
 dependencies = [
  "anyhow",
  "argon2",
@@ -6267,14 +6268,14 @@ dependencies = [
 
 [[package]]
 name = "qd-core"
-version = "2026.5.25"
+version = "2026.5.26"
 dependencies = [
  "bitflags 2.11.1",
 ]
 
 [[package]]
 name = "qd-wasm"
-version = "2026.5.25"
+version = "2026.5.26"
 dependencies = [
  "console_error_panic_hook",
  "getrandom 0.2.17",
@@ -6707,9 +6708,9 @@ dependencies = [
 
 [[package]]
 name = "reqwest"
-version = "0.13.3"
+version = "0.13.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "62e0021ea2c22aed41653bc7e1419abb2c97e038ff2c33d0e1309e49a97deec0"
+checksum = "219c5811de6525e5416c7d5d53bb656d3afdbc6c5af816e0802bcfa42dbdc1c3"
 dependencies = [
  "base64 0.22.1",
  "bytes",
@@ -6717,7 +6718,7 @@ dependencies = [
  "futures-core",
  "futures-util",
  "h2 0.4.14",
- "http 1.4.0",
+ "http 1.4.1",
  "http-body",
  "http-body-util",
  "hyper",
@@ -7912,7 +7913,7 @@ dependencies = [
  "glob",
  "gtk",
  "heck 0.5.0",
- "http 1.4.0",
+ "http 1.4.1",
  "jni 0.21.1",
  "libc",
  "log",
@@ -8146,7 +8147,7 @@ dependencies = [
  "cookie 0.18.1",
  "dpi",
  "gtk",
- "http 1.4.0",
+ "http 1.4.1",
  "jni 0.21.1",
  "objc2 0.6.4",
  "objc2-ui-kit 0.3.2",
@@ -8169,7 +8170,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b83849ee63ecb27a8e8d0fe51915ca215076914aca43f96db1179f0f415f6cd9"
 dependencies = [
  "gtk",
- "http 1.4.0",
+ "http 1.4.1",
  "jni 0.21.1",
  "log",
  "objc2 0.6.4",
@@ -8201,7 +8202,7 @@ dependencies = [
  "dom_query",
  "dunce",
  "glob",
- "http 1.4.0",
+ "http 1.4.1",
  "infer",
  "json-patch",
  "log",
@@ -8649,7 +8650,7 @@ dependencies = [
  "bitflags 2.11.1",
  "bytes",
  "futures-util",
- "http 1.4.0",
+ "http 1.4.1",
  "http-body",
  "pin-project-lite",
  "tower",
@@ -10614,7 +10615,7 @@ dependencies = [
  "dunce",
  "gdkx11",
  "gtk",
- "http 1.4.0",
+ "http 1.4.1",
  "javascriptcore-rs",
  "jni 0.21.1",
  "libc",
