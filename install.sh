@@ -32,6 +32,7 @@ GATEWAY="${QFKEY_GATEWAY:-0}"
 NO_SERVICE="${QFKEY_NO_SERVICE:-0}"
 NO_START="${QFKEY_NO_START:-0}"
 DO_UNINSTALL=0
+_TMP=""
 
 log()  { printf '\033[1;34m==>\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m[!]\033[0m %s\n' "$*" >&2; }
@@ -145,24 +146,24 @@ install_main() {
   require_cmd tar
   require_cmd uname
 
-  local arch url tmp tarball
+  local arch url tarball
   arch="$(detect_arch)"
   url="$(resolve_download_url "$arch" "$VERSION")"
 
   log "Target: linux-${arch} / version: ${VERSION}"
   log "Downloading 📦: ${url}"
 
-  tmp="$(mktemp -d)"
-  trap 'rm -rf "$tmp"' EXIT
-  tarball="${tmp}/${BIN_NAME}.tar.gz"
+  _TMP="$(mktemp -d)"
+  trap 'rm -rf "$_TMP"' EXIT
+  tarball="${_TMP}/${BIN_NAME}.tar.gz"
   download "$url" "$tarball"
 
   log "Extracting archive... ✨"
-  tar -xzf "$tarball" -C "$tmp"
+  tar -xzf "$tarball" -C "$_TMP"
 
   # Archive is expected to include ./qberry-cli and ./qberry.toml
-  local src_bin="${tmp}/${BIN_NAME}"
-  [ -f "$src_bin" ] || src_bin="$(find "$tmp" -maxdepth 3 -type f -name "${BIN_NAME}" -perm -u+x 2>/dev/null | head -n1)"
+  local src_bin="${_TMP}/${BIN_NAME}"
+  [ -f "$src_bin" ] || src_bin="$(find "$_TMP" -maxdepth 3 -type f -name "${BIN_NAME}" -perm -u+x 2>/dev/null | head -n1)"
   [ -n "${src_bin:-}" ] && [ -f "$src_bin" ] || die "Could not find ${BIN_NAME} in the archive"
 
   log "Installing 🚀: ${BIN_PATH}"
@@ -173,8 +174,8 @@ install_main() {
 
   # Default config file: keep existing file if already present
   if [ ! -f "$CONFIG_FILE" ]; then
-    local src_cfg="${tmp}/qberry.toml"
-    [ -f "$src_cfg" ] || src_cfg="$(find "$tmp" -maxdepth 3 -type f -name 'qberry.toml' 2>/dev/null | head -n1)"
+    local src_cfg="${_TMP}/qberry.toml"
+    [ -f "$src_cfg" ] || src_cfg="$(find "$_TMP" -maxdepth 3 -type f -name 'qberry.toml' 2>/dev/null | head -n1)"
     if [ -n "${src_cfg:-}" ] && [ -f "$src_cfg" ]; then
       log "Installing default config 🧩: ${CONFIG_FILE}"
       install -m 0644 "$src_cfg" "$CONFIG_FILE"
@@ -190,6 +191,19 @@ install_main() {
 RUST_LOG=off
 EOF
     chmod 0644 "$ENV_FILE"
+  fi
+
+  # Runtime shared libraries required by the binary (XCB for screen-capture feature)
+  if command -v apt-get >/dev/null 2>&1; then
+    if ! ldconfig -p 2>/dev/null | grep -q 'libxcb\.so\.1'; then
+      log "Installing runtime libraries 📚: libxcb1 libxcb-shm0 libxcb-randr0"
+      apt-get install -y --no-install-recommends libxcb1 libxcb-shm0 libxcb-randr0 2>/dev/null || \
+        warn "Could not install XCB libraries — service may fail (exit code 127)"
+    fi
+  elif command -v dnf >/dev/null 2>&1; then
+    dnf install -y libxcb 2>/dev/null || true
+  elif command -v yum >/dev/null 2>&1; then
+    yum install -y libxcb 2>/dev/null || true
   fi
 
   # TUN module
