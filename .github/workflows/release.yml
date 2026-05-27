@@ -17,14 +17,13 @@ jobs:
       matrix:
         include:
 
-          # ── qberry-cli (server: XCB/GUI 依存なし、systemd サービス向け)
+          # ── qberry-cli (server: remote あり・トレイなし・XCB 依存なし、Linux デフォルト)
           - os: ubuntu-24.04
             target: x86_64-unknown-linux-gnu
             artifact_name: qberry-cli-linux-x86_64
             crate: qberry-cli
             bin: qberry-cli
-            features: ""
-            no_default_features: true
+            features: "remote"
             xcb: false
             cross: false
             rustflags: "-C target-cpu=x86-64"
@@ -34,8 +33,7 @@ jobs:
             artifact_name: qberry-cli-linux-aarch64
             crate: qberry-cli
             bin: qberry-cli
-            features: ""
-            no_default_features: true
+            features: "remote"
             xcb: false
             cross: false
             rustflags: "-C target-cpu=generic"
@@ -205,7 +203,6 @@ jobs:
         run: |
           FEATURES_FLAG=""
           [[ -n "${{ matrix.features }}" ]] && FEATURES_FLAG="--features ${{ matrix.features }}"
-          [[ "${{ matrix.no_default_features }}" == "true" ]] && FEATURES_FLAG="--no-default-features $FEATURES_FLAG"
           cargo build --release \
             -p ${{ matrix.crate }} \
             --bin ${{ matrix.bin }} \
@@ -221,7 +218,6 @@ jobs:
         run: |
           FEATURES_FLAG=""
           [[ -n "${{ matrix.features }}" ]] && FEATURES_FLAG="--features ${{ matrix.features }}"
-          [[ "${{ matrix.no_default_features }}" == "true" ]] && FEATURES_FLAG="--no-default-features $FEATURES_FLAG"
           cross build --release \
             -p ${{ matrix.crate }} \
             --bin ${{ matrix.bin }} \
