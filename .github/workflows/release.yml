@@ -17,13 +17,13 @@ jobs:
       matrix:
         include:
 
-          # ── qberry-cli (server: remote あり・トレイなし・XCB 依存なし、Linux デフォルト)
+          # ── qberry-cli (server: トレイなし・XCB 依存なし、Linux デフォルト)
           - os: ubuntu-24.04
             target: x86_64-unknown-linux-gnu
             artifact_name: qberry-cli-linux-x86_64
             crate: qberry-cli
             bin: qberry-cli
-            features: "remote"
+            features: ""
             xcb: false
             cross: false
             rustflags: "-C target-cpu=x86-64"
@@ -33,7 +33,7 @@ jobs:
             artifact_name: qberry-cli-linux-aarch64
             crate: qberry-cli
             bin: qberry-cli
-            features: "remote"
+            features: ""
             xcb: false
             cross: false
             rustflags: "-C target-cpu=generic"
@@ -64,7 +64,7 @@ jobs:
             artifact_name: qberry-macos-x86_64
             crate: qberry-cli
             bin: qberry
-            features: "remote"
+            features: ""
             xcb: false
             cross: false
             rustflags: "-C target-cpu=x86-64"
@@ -74,7 +74,7 @@ jobs:
             artifact_name: qberry-macos-arm64
             crate: qberry-cli
             bin: qberry
-            features: "remote"
+            features: ""
             xcb: false
             cross: false
             rustflags: "-C target-cpu=generic"
@@ -84,7 +84,7 @@ jobs:
             artifact_name: qberry-windows-x86_64
             crate: qberry-cli
             bin: qberry
-            features: "remote"
+            features: ""
             xcb: false
             cross: false
             rustflags: "-C target-cpu=x86-64"

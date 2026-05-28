@@ -1038,9 +1038,9 @@ dependencies = [
 
 [[package]]
 name = "brotli"
-version = "8.0.2"
+version = "8.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4bd8b9603c7aa97359dbd97ecf258968c95f3adddd6db2f7e7a5bef101c84560"
+checksum = "8119e4516436f5708bbc474a9d395bf12f1b5395e93a92a56e647ac3388c8610"
 dependencies = [
  "alloc-no-stdlib",
  "alloc-stdlib",
@@ -1049,9 +1049,9 @@ dependencies = [
 
 [[package]]
 name = "brotli-decompressor"
-version = "5.0.0"
+version = "5.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "874bb8112abecc98cbd6d81ea4fa7e94fb9449648c93cc89aa40c81c24d7de03"
+checksum = "5962523e1b92ce1b5e793d9169b9943eece10d39f62550bc04bb605d75b94924"
 dependencies = [
  "alloc-no-stdlib",
  "alloc-stdlib",
@@ -3638,9 +3638,9 @@ dependencies = [
 
 [[package]]
 name = "hyper"
-version = "1.9.0"
+version = "1.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6299f016b246a94207e63da54dbe807655bf9e00044f73ded42c3ac5305fbcca"
+checksum = "eb92f162bf56536459fc83c79b974bb12837acfed43d6bc370a7916d0ae15ecc"
 dependencies = [
  "atomic-waker",
  "bytes",
@@ -4437,14 +4437,14 @@ dependencies = [
 
 [[package]]
 name = "libredox"
-version = "0.1.16"
+version = "0.1.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e02f3bb43d335493c96bf3fd3a321600bf6bd07ed34bc64118e9293bdffea46c"
+checksum = "f02ab6bace2054fb888a3c16f990117b579d14a3088e472d63c6011fa185c9d3"
 dependencies = [
  "bitflags 2.11.1",
  "libc",
  "plain",
- "redox_syscall 0.7.5",
+ "redox_syscall 0.8.0",
 ]
 
 [[package]]
@@ -4536,28 +4536,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0fae87c125b03c1d2c0150c90365d7d6bcc53fb73a9acaef207d2d065860f062"
 dependencies = [
  "imgref",
-]
-
-[[package]]
-name = "lovely-core"
-version = "2026.5.27"
-dependencies = [
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "lovely-wasm"
-version = "2026.5.27"
-dependencies = [
- "console_error_panic_hook",
- "js-sys",
- "lovely-core",
- "serde",
- "serde-wasm-bindgen",
- "serde_json",
- "wasm-bindgen",
- "web-sys",
 ]
 
 [[package]]
@@ -6073,7 +6051,7 @@ version = "3.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e67ba7e9b2b56446f1d419b1d807906278ffa1a658a8a5d8a39dcb1f5a78614f"
 dependencies = [
- "toml_edit 0.25.11+spec-1.1.0",
+ "toml_edit 0.25.12+spec-1.1.0",
 ]
 
 [[package]]
@@ -6187,7 +6165,7 @@ dependencies = [
 
 [[package]]
 name = "ps-core"
-version = "2026.5.27"
+version = "2026.5.28"
 dependencies = [
  "fontdue",
  "gif 0.13.3",
@@ -6199,7 +6177,7 @@ dependencies = [
 
 [[package]]
 name = "ps-wasm"
-version = "2026.5.27"
+version = "2026.5.28"
 dependencies = [
  "console_error_panic_hook",
  "getrandom 0.4.2",
@@ -6239,7 +6217,7 @@ checksum = "e0c5ccf5294c6ccd63a74f1565028353830a9c2f5eb0c682c355c471726a6e3f"
 
 [[package]]
 name = "qberry-cli"
-version = "2026.5.27"
+version = "2026.5.28"
 dependencies = [
  "anyhow",
  "clap",
@@ -6260,7 +6238,7 @@ dependencies = [
 
 [[package]]
 name = "qberry-core"
-version = "2026.5.27"
+version = "2026.5.28"
 dependencies = [
  "accessibility-sys",
  "actix",
@@ -6322,7 +6300,7 @@ dependencies = [
 
 [[package]]
 name = "qberry-gui"
-version = "2026.5.27"
+version = "2026.5.28"
 dependencies = [
  "anyhow",
  "clap",
@@ -6346,7 +6324,7 @@ dependencies = [
 
 [[package]]
 name = "qberry-wasm"
-version = "2026.5.27"
+version = "2026.5.28"
 dependencies = [
  "anyhow",
  "argon2",
@@ -6383,7 +6361,7 @@ dependencies = [
 
 [[package]]
 name = "qd-core"
-version = "2026.5.27"
+version = "2026.5.28"
 dependencies = [
  "bitflags 2.11.1",
  "cairo-rs 0.19.4",
@@ -6391,7 +6369,7 @@ dependencies = [
 
 [[package]]
 name = "qd-wasm"
-version = "2026.5.27"
+version = "2026.5.28"
 dependencies = [
  "console_error_panic_hook",
  "getrandom 0.2.17",
@@ -6729,9 +6707,9 @@ dependencies = [
 
 [[package]]
 name = "redox_syscall"
-version = "0.7.5"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4666a1a60d8412eab19d94f6d13dcc9cea0a5ef4fdf6a5db306537413c661b1b"
+checksum = "7c7591fa2c6b601dfcfe5f043f65a1c39fcdf50efefcd7f1572e538c1f4b398d"
 dependencies = [
  "bitflags 2.11.1",
 ]
@@ -8199,9 +8177,9 @@ dependencies = [
 
 [[package]]
 name = "tauri-plugin-positioner"
-version = "2.3.1"
+version = "2.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "02dcd56dd4797bd4d6c4c658daed40ce563176f92df90fbd2c904ce145de17ef"
+checksum = "686204dc3171a2d59436e470c8ea99f08c5f5bf63ef1a40f900d6d48f433b816"
 dependencies = [
  "log",
  "serde",
@@ -8717,9 +8695,9 @@ dependencies = [
 
 [[package]]
 name = "toml_edit"
-version = "0.25.11+spec-1.1.0"
+version = "0.25.12+spec-1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0b59c4d22ed448339746c59b905d24568fcbb3ab65a500494f7b8c3e97739f2b"
+checksum = "d2153edc6955a6c354fad8f5efd38b6a8769bdccf9fe50f8e1329f81b0baa5d7"
 dependencies = [
  "indexmap 2.14.0",
  "toml_datetime 1.1.1+spec-1.1.0",
@@ -10977,18 +10955,18 @@ dependencies = [
 
 [[package]]
 name = "zerocopy"
-version = "0.8.48"
+version = "0.8.49"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eed437bf9d6692032087e337407a86f04cd8d6a16a37199ed57949d415bd68e9"
+checksum = "bce33a6288fa3f072a8c2c7d0f2fdbb90e28298f0135c1f99b96c3db2efcc60b"
 dependencies = [
  "zerocopy-derive",
 ]
 
 [[package]]
 name = "zerocopy-derive"
-version = "0.8.48"
+version = "0.8.49"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "70e3cd084b1788766f53af483dd21f93881ff30d7320490ec3ef7526d203bad4"
+checksum = "8fd425244944f4ab65ccff928e7323354c5a018c75838362fdce749dfad2ee1e"
 dependencies = [
  "proc-macro2",
  "quote",
