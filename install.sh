@@ -1,22 +1,28 @@
 #!/usr/bin/env bash
-# QBerry🫐 (qberry-cli) — Linux curl+bash installer ✨
+# QBerry🫐 (qberry-cli) — Linux / macOS curl+bash installer ✨
 #
 # Usage:
 #   curl -fsSL https://raw.githubusercontent.com/yui0/qBerryOS/master/install.sh | sudo bash
 #   curl -fsSL https://raw.githubusercontent.com/yui0/qBerryOS/master/install.sh | sudo bash -s -- --gateway
+#   curl -fsSL https://raw.githubusercontent.com/yui0/qBerryOS/master/install.sh | sudo bash -s -- --broadcast
+#   curl -fsSL https://raw.githubusercontent.com/yui0/qBerryOS/master/install.sh | sudo bash -s -- --profile-name mynet --profile-password secret
 #   curl -fsSL https://raw.githubusercontent.com/yui0/qBerryOS/master/install.sh | sudo bash -s -- --version 2026.5.14
 #   curl -fsSL https://raw.githubusercontent.com/yui0/qBerryOS/master/install.sh | sudo bash -s -- --uninstall
 #
 # Options:
-#   --version <tag>   Release tag to install (default: latest)
-#   --prefix  <dir>   Install prefix (default: /usr/local)
-#   --gateway         Add `--gateway` to systemd ExecStart
-#   --no-service      Do not configure a systemd service
-#   --no-start        Do not enable / start the service
-#   --uninstall       Remove binary and service (keep config files)
+#   --version <tag>            Release tag to install (default: latest)
+#   --prefix  <dir>            Install prefix (default: /usr/local)
+#   --gateway                  Add `--gateway` to systemd/launchd ExecStart
+#   --broadcast                Set broadcast=true in qberry.toml
+#   --profile-name <name>      Auth profile name written to qberry.toml; enables auth_enabled=true
+#   --profile-password <pass>  Auth profile password written to qberry.toml
+#   --no-service               Do not configure a systemd/launchd service
+#   --no-start                 Do not enable / start the service
+#   --uninstall                Remove binary and service (keep config files)
 #
 # Equivalent environment variables:
-#   QFKEY_VERSION, QFKEY_PREFIX, QFKEY_GATEWAY=1, QFKEY_NO_SERVICE=1, QFKEY_NO_START=1
+#   QFKEY_VERSION, QFKEY_PREFIX, QFKEY_GATEWAY=1, QFKEY_BROADCAST=1,
+#   QFKEY_PROFILE_NAME, QFKEY_PROFILE_PASSWORD, QFKEY_NO_SERVICE=1, QFKEY_NO_START=1
 set -euo pipefail
 
 REPO="yui0/qBerryOS"
@@ -26,9 +32,16 @@ STATE_DIR="/var/lib/${BIN_NAME}"
 CONFIG_FILE="/etc/qberry.toml"
 ENV_FILE="/etc/qberry.env"
 
+# macOS launchd
+PLIST_LABEL="net.berry-lab.${SERVICE_NAME}"
+PLIST_PATH="/Library/LaunchDaemons/${PLIST_LABEL}.plist"
+
 VERSION="${QFKEY_VERSION:-latest}"
 PREFIX="${QFKEY_PREFIX:-/usr/local}"
 GATEWAY="${QFKEY_GATEWAY:-0}"
+BROADCAST="${QFKEY_BROADCAST:-0}"
+PROFILE_NAME="${QFKEY_PROFILE_NAME:-}"
+PROFILE_PASSWORD="${QFKEY_PROFILE_PASSWORD:-}"
 NO_SERVICE="${QFKEY_NO_SERVICE:-0}"
 NO_START="${QFKEY_NO_START:-0}"
 DO_UNINSTALL=0
@@ -40,15 +53,20 @@ die()  { printf '\033[1;31m[x]\033[0m %s\n' "$*" >&2; exit 1; }
 
 while [ $# -gt 0 ]; do
   case "$1" in
-    --version)    VERSION="${2:?--version requires a value}"; shift 2 ;;
-    --version=*)  VERSION="${1#*=}"; shift ;;
-    --prefix)     PREFIX="${2:?--prefix requires a value}"; shift 2 ;;
-    --prefix=*)   PREFIX="${1#*=}"; shift ;;
-    --gateway)    GATEWAY=1; shift ;;
-    --no-service) NO_SERVICE=1; shift ;;
-    --no-start)   NO_START=1; shift ;;
-    --uninstall)  DO_UNINSTALL=1; shift ;;
-    -h|--help)    sed -n '2,19p' "$0"; exit 0 ;;
+    --version)            VERSION="${2:?--version requires a value}"; shift 2 ;;
+    --version=*)          VERSION="${1#*=}"; shift ;;
+    --prefix)             PREFIX="${2:?--prefix requires a value}"; shift 2 ;;
+    --prefix=*)           PREFIX="${1#*=}"; shift ;;
+    --gateway)            GATEWAY=1; shift ;;
+    --broadcast)          BROADCAST=1; shift ;;
+    --profile-name)       PROFILE_NAME="${2:?--profile-name requires a value}"; shift 2 ;;
+    --profile-name=*)     PROFILE_NAME="${1#*=}"; shift ;;
+    --profile-password)   PROFILE_PASSWORD="${2:?--profile-password requires a value}"; shift 2 ;;
+    --profile-password=*) PROFILE_PASSWORD="${1#*=}"; shift ;;
+    --no-service)         NO_SERVICE=1; shift ;;
+    --no-start)           NO_START=1; shift ;;
+    --uninstall)          DO_UNINSTALL=1; shift ;;
+    -h|--help)            sed -n '2,25p' "$0"; exit 0 ;;
     *) die "Unknown argument: $1" ;;
   esac
 done
@@ -67,19 +85,12 @@ require_cmd() {
   command -v "$1" >/dev/null 2>&1 || die "Command not found: $1"
 }
 
-uninstall() {
-  require_root
-  log "Uninstalling qberry-cli 🧹"
-  if systemctl list-unit-files 2>/dev/null | grep -q "^${SERVICE_NAME}.service"; then
-    systemctl stop    "${SERVICE_NAME}" 2>/dev/null || true
-    systemctl disable "${SERVICE_NAME}" 2>/dev/null || true
-  fi
-  rm -f "${SERVICE_PATH}"
-  systemctl daemon-reload 2>/dev/null || true
-  rm -f "${BIN_PATH}"
-  # Clean up legacy binaries that may remain in other prefixes
-  rm -f "/usr/bin/${BIN_NAME}" "/usr/local/bin/${BIN_NAME}"
-  log "Uninstall complete ✅ (kept ${CONFIG_FILE}, ${ENV_FILE}, and state dir ${STATE_DIR})"
+detect_os() {
+  case "$(uname -s)" in
+    Linux*)  echo "linux" ;;
+    Darwin*) echo "macos" ;;
+    *) die "Unsupported OS: $(uname -s) (supported: Linux / macOS only)" ;;
+  esac
 }
 
 detect_arch() {
@@ -92,8 +103,43 @@ detect_arch() {
   esac
 }
 
+# Portable sed -i: macOS requires an explicit backup extension (use empty string for in-place)
+sed_i() {
+  if [ "$(detect_os)" = "macos" ]; then
+    sed -i '' "$@"
+  else
+    sed -i "$@"
+  fi
+}
+
+uninstall() {
+  require_root
+  local os
+  os="$(detect_os)"
+  log "Uninstalling qberry-cli 🧹"
+
+  if [ "$os" = "macos" ]; then
+    if [ -f "$PLIST_PATH" ]; then
+      launchctl unload "$PLIST_PATH" 2>/dev/null || true
+      rm -f "$PLIST_PATH"
+    fi
+  else
+    if systemctl list-unit-files 2>/dev/null | grep -q "^${SERVICE_NAME}.service"; then
+      systemctl stop    "${SERVICE_NAME}" 2>/dev/null || true
+      systemctl disable "${SERVICE_NAME}" 2>/dev/null || true
+    fi
+    rm -f "${SERVICE_PATH}"
+    systemctl daemon-reload 2>/dev/null || true
+  fi
+
+  rm -f "${BIN_PATH}"
+  rm -f "/usr/bin/${BIN_NAME}" "/usr/local/bin/${BIN_NAME}"
+  log "Uninstall complete ✅ (kept ${CONFIG_FILE}, ${ENV_FILE}, and state dir ${STATE_DIR})"
+}
+
 resolve_download_url() {
-  local arch="$1" version="$2" asset="qberry-cli-linux-${arch}.tar.gz"
+  local os="$1" arch="$2" version="$3"
+  local asset="qberry-cli-${os}-${arch}.tar.gz"
   if [ "$version" = "latest" ]; then
     printf 'https://github.com/%s/releases/latest/download/%s\n' "$REPO" "$asset"
   else
@@ -112,7 +158,32 @@ download() {
   fi
 }
 
-write_service() {
+patch_config() {
+  local cfg="$1"
+  [ -f "$cfg" ] || return
+
+  if [ "$BROADCAST" = "1" ]; then
+    sed_i 's/^broadcast = false$/broadcast = true/' "$cfg"
+    log "Config: broadcast = true"
+  fi
+
+  if [ -n "$PROFILE_NAME" ] || [ -n "$PROFILE_PASSWORD" ]; then
+    sed_i 's/^auth_enabled = false$/auth_enabled = true/' "$cfg"
+    local pname="${PROFILE_NAME:-default}"
+    local ppass="${PROFILE_PASSWORD:-}"
+    cat >> "$cfg" <<EOF
+
+[[auth_profiles]]
+name = "${pname}"
+password = "${ppass}"
+flags = 0
+is_default = true
+EOF
+    log "Config: auth_enabled = true, profile '${pname}' added"
+  fi
+}
+
+write_service_linux() {
   local exec_args=""
   [ "$GATEWAY" = "1" ] && exec_args=" --gateway"
 
@@ -141,16 +212,99 @@ WantedBy=multi-user.target
 EOF
 }
 
+write_service_macos() {
+  local exec_args=()
+  [ "$GATEWAY" = "1" ] && exec_args=("--gateway")
+
+  log "Writing launchd plist 🛠️: ${PLIST_PATH}"
+  mkdir -p "$(dirname "$PLIST_PATH")"
+
+  # Build ProgramArguments entries
+  local args_xml="        <string>${BIN_PATH}</string>"
+  for a in "${exec_args[@]+"${exec_args[@]}"}"; do
+    args_xml="${args_xml}
+        <string>${a}</string>"
+  done
+
+  cat > "${PLIST_PATH}" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>${PLIST_LABEL}</string>
+    <key>ProgramArguments</key>
+    <array>
+${args_xml}
+    </array>
+    <key>WorkingDirectory</key>
+    <string>${STATE_DIR}</string>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>StandardOutPath</key>
+    <string>/var/log/${SERVICE_NAME}.log</string>
+    <key>StandardErrorPath</key>
+    <string>/var/log/${SERVICE_NAME}.error.log</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>QBERRY_LOG_LEVEL</key>
+        <string>off</string>
+    </dict>
+</dict>
+</plist>
+EOF
+  chmod 0644 "${PLIST_PATH}"
+}
+
+setup_service() {
+  local os="$1"
+  if [ "$NO_SERVICE" = "1" ]; then
+    log "Skipping service setup because --no-service was specified 💤"
+    return
+  fi
+
+  if [ "$os" = "macos" ]; then
+    write_service_macos
+    if [ "$NO_START" = "1" ]; then
+      log "Skipping launchd load because --no-start was specified 💤"
+    else
+      launchctl unload "${PLIST_PATH}" 2>/dev/null || true
+      launchctl load -w "${PLIST_PATH}"
+      sleep 1
+      launchctl list | grep "${PLIST_LABEL}" || true
+    fi
+  else
+    if ! command -v systemctl >/dev/null 2>&1; then
+      warn "Skipping systemd setup because systemctl was not found"
+      return
+    fi
+    write_service_linux
+    systemctl daemon-reload
+    if [ "$NO_START" = "1" ]; then
+      log "Skipping enable/start because --no-start was specified 💤"
+    else
+      systemctl enable "${SERVICE_NAME}" >/dev/null
+      systemctl restart "${SERVICE_NAME}"
+      sleep 1
+      systemctl --no-pager --full status "${SERVICE_NAME}" | sed -n '1,8p' || true
+    fi
+  fi
+}
+
 install_main() {
   require_root
   require_cmd tar
   require_cmd uname
 
-  local arch url tarball
+  local os arch url tarball
+  os="$(detect_os)"
   arch="$(detect_arch)"
-  url="$(resolve_download_url "$arch" "$VERSION")"
+  url="$(resolve_download_url "$os" "$arch" "$VERSION")"
 
-  log "Target: linux-${arch} / version: ${VERSION}"
+  log "Target: ${os}-${arch} / version: ${VERSION}"
   log "Downloading 📦: ${url}"
 
   _TMP="$(mktemp -d)"
@@ -161,7 +315,6 @@ install_main() {
   log "Extracting archive... ✨"
   tar -xzf "$tarball" -C "$_TMP"
 
-  # Archive is expected to include ./qberry-cli and ./qberry.toml
   local src_bin="${_TMP}/${BIN_NAME}"
   [ -f "$src_bin" ] || src_bin="$(find "$_TMP" -maxdepth 3 -type f -name "${BIN_NAME}" -perm -u+x 2>/dev/null | head -n1)"
   [ -n "${src_bin:-}" ] && [ -f "$src_bin" ] || die "Could not find ${BIN_NAME} in the archive"
@@ -184,64 +337,72 @@ install_main() {
     log "Keeping existing config 💾: ${CONFIG_FILE}"
   fi
 
-  # Environment file template
-  if [ ! -f "$ENV_FILE" ]; then
+  patch_config "$CONFIG_FILE"
+
+  # Environment file template (Linux only; macOS uses plist EnvironmentVariables)
+  if [ "$os" = "linux" ] && [ ! -f "$ENV_FILE" ]; then
     cat > "$ENV_FILE" <<'EOF'
 # qberry-cli systemd environment
-RUST_LOG=off
+QBERRY_LOG_LEVEL=off
 EOF
     chmod 0644 "$ENV_FILE"
   fi
 
-  # Runtime shared libraries required by the binary (XCB for screen-capture feature)
-  if command -v apt-get >/dev/null 2>&1; then
-    if ! ldconfig -p 2>/dev/null | grep -q 'libxcb\.so\.1'; then
-      log "Installing runtime libraries 📚: libxcb1 libxcb-shm0 libxcb-randr0"
-      apt-get install -y --no-install-recommends libxcb1 libxcb-shm0 libxcb-randr0 2>/dev/null || \
-        warn "Could not install XCB libraries — service may fail (exit code 127)"
+  # Runtime shared libraries (Linux only)
+  if [ "$os" = "linux" ]; then
+    if command -v apt-get >/dev/null 2>&1; then
+      if ! ldconfig -p 2>/dev/null | grep -q 'libxcb\.so\.1'; then
+        log "Installing runtime libraries 📚: libxcb1 libxcb-shm0 libxcb-randr0"
+        apt-get install -y --no-install-recommends libxcb1 libxcb-shm0 libxcb-randr0 2>/dev/null || \
+          warn "Could not install XCB libraries — service may fail (exit code 127)"
+      fi
+    elif command -v dnf >/dev/null 2>&1; then
+      dnf install -y libxcb 2>/dev/null || true
+    elif command -v yum >/dev/null 2>&1; then
+      yum install -y libxcb 2>/dev/null || true
     fi
-  elif command -v dnf >/dev/null 2>&1; then
-    dnf install -y libxcb 2>/dev/null || true
-  elif command -v yum >/dev/null 2>&1; then
-    yum install -y libxcb 2>/dev/null || true
-  fi
 
-  # TUN module
-  if ! lsmod 2>/dev/null | grep -q '^tun'; then
-    modprobe tun 2>/dev/null || warn "Could not enable the tun kernel module"
-  fi
-
-  if [ "$NO_SERVICE" = "1" ]; then
-    log "Skipping systemd setup because --no-service was specified 💤"
-  elif ! command -v systemctl >/dev/null 2>&1; then
-    warn "Skipping systemd setup because systemctl was not found"
-  else
-    write_service
-    systemctl daemon-reload
-    if [ "$NO_START" = "1" ]; then
-      log "Skipping enable/start because --no-start was specified 💤"
-    else
-      systemctl enable "${SERVICE_NAME}" >/dev/null
-      systemctl restart "${SERVICE_NAME}"
-      sleep 1
-      systemctl --no-pager --full status "${SERVICE_NAME}" | sed -n '1,8p' || true
+    # TUN module
+    if ! lsmod 2>/dev/null | grep -q '^tun'; then
+      modprobe tun 2>/dev/null || warn "Could not enable the tun kernel module"
     fi
   fi
+
+  setup_service "$os"
 
   local installed_ver
   installed_ver="$("$BIN_PATH" --version 2>/dev/null || true)"
   log "Install complete 🎉: ${installed_ver:-$BIN_PATH}"
+
+  local svc_info
+  if [ "$os" = "macos" ]; then
+    svc_info="${PLIST_PATH}"
+  else
+    svc_info="${SERVICE_PATH}"
+  fi
+
   cat <<EOF
 
   Binary  : ${BIN_PATH}
   Config  : ${CONFIG_FILE}
-  Service : ${SERVICE_PATH} ($([ "$NO_SERVICE" = "1" ] && echo skipped || echo installed))
+  Service : ${svc_info} ($([ "$NO_SERVICE" = "1" ] && echo skipped || echo installed))
 
   Quick commands:
+EOF
+
+  if [ "$os" = "macos" ]; then
+    cat <<EOF
+    sudo launchctl list | grep ${PLIST_LABEL}
+    sudo launchctl unload ${PLIST_PATH} && sudo launchctl load -w ${PLIST_PATH}
+    tail -f /var/log/${SERVICE_NAME}.log
+EOF
+  else
+    cat <<EOF
     sudo systemctl status ${SERVICE_NAME}
     sudo systemctl restart ${SERVICE_NAME}
     sudo journalctl -u ${SERVICE_NAME} -f
 EOF
+  fi
 }
 
 if [ "$DO_UNINSTALL" = "1" ]; then
