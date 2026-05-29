@@ -26,7 +26,11 @@
 set -euo pipefail
 
 REPO="yui0/qBerryOS"
-BIN_NAME="qberry-cli"
+# macOS release binary is named "qberry"; Linux release is "qberry-cli"
+case "$(uname -s)" in
+  Darwin*) BIN_NAME="qberry" ;;
+  *)       BIN_NAME="qberry-cli" ;;
+esac
 SERVICE_NAME="qberry"
 STATE_DIR="/var/lib/${BIN_NAME}"
 CONFIG_FILE="/etc/qberry.toml"
@@ -139,7 +143,11 @@ uninstall() {
 
 resolve_download_url() {
   local os="$1" arch="$2" version="$3"
-  local asset="qberry-cli-${os}-${arch}.tar.gz"
+  local asset
+  case "$os" in
+    macos) asset="qberry-${os}-${arch}.tar.gz" ;;
+    *)     asset="qberry-cli-${os}-${arch}.tar.gz" ;;
+  esac
   if [ "$version" = "latest" ]; then
     printf 'https://github.com/%s/releases/latest/download/%s\n' "$REPO" "$asset"
   else
