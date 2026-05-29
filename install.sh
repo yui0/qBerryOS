@@ -242,13 +242,34 @@ write_info_plist_macos() {
     <string>${BIN_NAME}</string>
     <key>CFBundleVersion</key>
     <string>1.0</string>
+    <key>CFBundleIconFile</key>
+    <string>QBerry</string>
     <key>LSUIElement</key>
     <true/>
     <key>NSScreenCaptureUsageDescription</key>
     <string>QBerry needs screen recording access for remote desktop functionality.</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>12.0</string>
 </dict>
 </plist>
 EOF
+}
+
+# Patch Mach-O LC_BUILD_VERSION minos so Finder allows launch on older macOS.
+# The release binary is often compiled with minos 13.0; the terminal ignores this
+# check but Finder enforces it, producing "requires macOS 13.0 or later".
+patch_macos_min_version() {
+  local bin="$1" target="${2:-12.0}"
+  if ! command -v vtool >/dev/null 2>&1; then
+    warn "vtool not found — skipping minos patch (install Xcode Command Line Tools)"
+    return
+  fi
+  local cur
+  cur="$(vtool -show-build "$bin" 2>/dev/null | awk '/minos/{print $2; exit}')"
+  [ -z "$cur" ] && return
+  log "Patching Mach-O minos: ${cur} → ${target} in $(basename "$bin")"
+  vtool -set-build-version macos "$target" "$target" -replace -output "$bin" "$bin" 2>/dev/null \
+    || warn "vtool patch failed — app bundle may still require macOS 13+"
 }
 
 # Open System Settings > Privacy > Screen Recording so the user can grant access.
@@ -374,7 +395,20 @@ install_main() {
     log "Installing 🚀: ${BUNDLE_BIN}"
     mkdir -p "${APP_BUNDLE}/Contents/MacOS"
     install -m 0755 "$src_bin" "$BUNDLE_BIN"
+    patch_macos_min_version "$BUNDLE_BIN" "12.0"
     write_info_plist_macos
+
+    # Install app icon if bundled in the archive
+    local src_icns
+    src_icns="$(find "$_TMP" -maxdepth 3 -type f -name 'QBerry.icns' 2>/dev/null | head -n1)"
+    if [ -n "${src_icns:-}" ]; then
+      install -d -m 0755 "${APP_BUNDLE}/Contents/Resources"
+      install -m 0644 "$src_icns" "${APP_BUNDLE}/Contents/Resources/QBerry.icns"
+      log "Icon installed 🎨: ${APP_BUNDLE}/Contents/Resources/QBerry.icns"
+    else
+      warn "QBerry.icns not found in archive — app icon will be blank"
+    fi
+
     install -d -m 0755 "$BIN_DIR"
     ln -sf "$BUNDLE_BIN" "${BIN_PATH}"
     log "Symlink: ${BIN_PATH} -> ${BUNDLE_BIN}"
