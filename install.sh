@@ -36,9 +36,11 @@ STATE_DIR="/var/lib/${BIN_NAME}"
 CONFIG_FILE="/etc/qberry.toml"
 ENV_FILE="/etc/qberry.env"
 
-# macOS launchd
+# macOS launchd / app bundle
 PLIST_LABEL="net.berry-lab.${SERVICE_NAME}"
 PLIST_PATH="/Library/LaunchDaemons/${PLIST_LABEL}.plist"
+APP_BUNDLE="/Applications/QBerry.app"
+BUNDLE_BIN="${APP_BUNDLE}/Contents/MacOS/${BIN_NAME}"
 
 VERSION="${QFKEY_VERSION:-latest}"
 PREFIX="${QFKEY_PREFIX:-/usr/local}"
@@ -127,6 +129,7 @@ uninstall() {
       launchctl unload "$PLIST_PATH" 2>/dev/null || true
       rm -f "$PLIST_PATH"
     fi
+    rm -rf "$APP_BUNDLE"
   else
     if systemctl list-unit-files 2>/dev/null | grep -q "^${SERVICE_NAME}.service"; then
       systemctl stop    "${SERVICE_NAME}" 2>/dev/null || true
@@ -220,6 +223,44 @@ WantedBy=multi-user.target
 EOF
 }
 
+write_info_plist_macos() {
+  mkdir -p "${APP_BUNDLE}/Contents/MacOS"
+  log "Writing Info.plist 📄: ${APP_BUNDLE}/Contents/Info.plist"
+  cat > "${APP_BUNDLE}/Contents/Info.plist" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleIdentifier</key>
+    <string>${PLIST_LABEL}</string>
+    <key>CFBundleName</key>
+    <string>QBerry</string>
+    <key>CFBundleDisplayName</key>
+    <string>QBerry</string>
+    <key>CFBundleExecutable</key>
+    <string>${BIN_NAME}</string>
+    <key>CFBundleVersion</key>
+    <string>1.0</string>
+    <key>LSUIElement</key>
+    <true/>
+    <key>NSScreenCaptureUsageDescription</key>
+    <string>QBerry needs screen recording access for remote desktop functionality.</string>
+</dict>
+</plist>
+EOF
+}
+
+# Open System Settings > Privacy > Screen Recording so the user can grant access.
+open_screen_recording_prefs() {
+  local real_user="${SUDO_USER:-}"
+  [ -z "$real_user" ] && return
+  log "Opening Screen Recording preferences 🖥️ — please enable QBerry and restart the service."
+  sudo -u "$real_user" open \
+    "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture" \
+    2>/dev/null || true
+}
+
 write_service_macos() {
   local exec_args=()
   [ "$GATEWAY" = "1" ] && exec_args=("--gateway")
@@ -227,8 +268,8 @@ write_service_macos() {
   log "Writing launchd plist 🛠️: ${PLIST_PATH}"
   mkdir -p "$(dirname "$PLIST_PATH")"
 
-  # Build ProgramArguments entries
-  local args_xml="        <string>${BIN_PATH}</string>"
+  # Build ProgramArguments entries — run from inside the app bundle for TCC/Screen Recording
+  local args_xml="        <string>${BUNDLE_BIN}</string>"
   for a in "${exec_args[@]+"${exec_args[@]}"}"; do
     args_xml="${args_xml}
         <string>${a}</string>"
@@ -276,6 +317,7 @@ setup_service() {
 
   if [ "$os" = "macos" ]; then
     write_service_macos
+    open_screen_recording_prefs
     if [ "$NO_START" = "1" ]; then
       log "Skipping launchd load because --no-start was specified 💤"
     else
@@ -327,9 +369,20 @@ install_main() {
   [ -f "$src_bin" ] || src_bin="$(find "$_TMP" -maxdepth 3 -type f -name "${BIN_NAME}" -perm -u+x 2>/dev/null | head -n1)"
   [ -n "${src_bin:-}" ] && [ -f "$src_bin" ] || die "Could not find ${BIN_NAME} in the archive"
 
-  log "Installing 🚀: ${BIN_PATH}"
-  install -d -m 0755 "$BIN_DIR"
-  install -m 0755 "$src_bin" "$BIN_PATH"
+  if [ "$os" = "macos" ]; then
+    # Install binary inside the app bundle; symlink from BIN_PATH for CLI convenience
+    log "Installing 🚀: ${BUNDLE_BIN}"
+    mkdir -p "${APP_BUNDLE}/Contents/MacOS"
+    install -m 0755 "$src_bin" "$BUNDLE_BIN"
+    write_info_plist_macos
+    install -d -m 0755 "$BIN_DIR"
+    ln -sf "$BUNDLE_BIN" "${BIN_PATH}"
+    log "Symlink: ${BIN_PATH} -> ${BUNDLE_BIN}"
+  else
+    log "Installing 🚀: ${BIN_PATH}"
+    install -d -m 0755 "$BIN_DIR"
+    install -m 0755 "$src_bin" "$BIN_PATH"
+  fi
 
   install -d -m 0755 "$STATE_DIR"
 
@@ -392,6 +445,7 @@ EOF
   cat <<EOF
 
   Binary  : ${BIN_PATH}
+  Bundle  : ${APP_BUNDLE}
   Config  : ${CONFIG_FILE}
   Service : ${svc_info} ($([ "$NO_SERVICE" = "1" ] && echo skipped || echo installed))
 
@@ -403,6 +457,11 @@ EOF
     sudo launchctl list | grep ${PLIST_LABEL}
     sudo launchctl unload ${PLIST_PATH} && sudo launchctl load -w ${PLIST_PATH}
     tail -f /var/log/${SERVICE_NAME}.log
+
+  ⚠️  Screen Recording permission required for remote desktop:
+    System Settings > Privacy & Security > Screen Recording > enable QBerry
+    (System Settings should have opened automatically — restart the service after granting.)
+    sudo launchctl unload ${PLIST_PATH} && sudo launchctl load -w ${PLIST_PATH}
 EOF
   else
     cat <<EOF
