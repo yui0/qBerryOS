@@ -270,6 +270,15 @@ patch_macos_min_version() {
   log "Patching Mach-O minos: ${cur} → ${target} in $(basename "$bin")"
   vtool -set-build-version macos "$target" "$target" -replace -output "$bin" "$bin" 2>/dev/null \
     || warn "vtool patch failed — app bundle may still require macOS 13+"
+  # vtool modifies the binary and breaks its code signature; re-sign ad-hoc so
+  # macOS TCC (Screen Recording, etc.) can re-identify the app bundle correctly.
+  if command -v codesign >/dev/null 2>&1; then
+    codesign --force --sign - "$bin" 2>/dev/null \
+      || warn "codesign ad-hoc re-sign failed — Screen Recording permission may not be retained"
+    log "Ad-hoc re-signed: $(basename "$bin")"
+  else
+    warn "codesign not found — Screen Recording permission may not work after minos patch"
+  fi
 }
 
 # Open System Settings > Privacy > Screen Recording so the user can grant access.
@@ -395,7 +404,8 @@ install_main() {
     log "Installing 🚀: ${BUNDLE_BIN}"
     mkdir -p "${APP_BUNDLE}/Contents/MacOS"
     install -m 0755 "$src_bin" "$BUNDLE_BIN"
-    patch_macos_min_version "$BUNDLE_BIN" "12.0"
+
+    # Write Info.plist and install icon BEFORE signing so the bundle is complete
     write_info_plist_macos
 
     # Install app icon if bundled in the archive
@@ -407,6 +417,18 @@ install_main() {
       log "Icon installed 🎨: ${APP_BUNDLE}/Contents/Resources/QBerry.icns"
     else
       warn "QBerry.icns not found in archive — app icon will be blank"
+    fi
+
+    # Patch minos on the binary, then sign the entire bundle (binary + Info.plist + Resources)
+    # Bundle-level signing is required for TCC (Screen Recording) to recognise the app.
+    patch_macos_min_version "$BUNDLE_BIN" "12.0"
+    if command -v codesign >/dev/null 2>&1; then
+      codesign --force --deep --sign - "${APP_BUNDLE}" 2>/dev/null \
+        && log "App bundle signed 🔏: ${APP_BUNDLE}" \
+        || warn "Bundle signing failed — Screen Recording permission may not work"
+      warn "If Screen Recording or Accessibility permission is not recognised, run manually:"
+      warn "  sudo tccutil reset ScreenCapture ${PLIST_LABEL}"
+      warn "  sudo tccutil reset Accessibility  ${PLIST_LABEL}"
     fi
 
     install -d -m 0755 "$BIN_DIR"
