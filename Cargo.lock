@@ -232,7 +232,7 @@ dependencies = [
  "serde_json",
  "serde_urlencoded",
  "smallvec",
- "socket2 0.6.3",
+ "socket2 0.6.4",
  "time",
  "tracing",
  "url",
@@ -3689,7 +3689,7 @@ dependencies = [
  "libc",
  "percent-encoding",
  "pin-project-lite",
- "socket2 0.6.3",
+ "socket2 0.6.4",
  "system-configuration",
  "tokio",
  "tower-service",
@@ -4678,9 +4678,9 @@ dependencies = [
 
 [[package]]
 name = "mio"
-version = "1.2.0"
+version = "1.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "50b7e5b27aa02a74bac8c3f23f448f8d87ff11f92d3aac1a6ed369ee08cc56c1"
+checksum = "02bd0af71c67b473010cbbc60715ee815645a4dc942899111f494b4b737d6fda"
 dependencies = [
  "libc",
  "log",
@@ -6165,7 +6165,7 @@ dependencies = [
 
 [[package]]
 name = "ps-core"
-version = "2026.5.28"
+version = "2026.5.29"
 dependencies = [
  "fontdue",
  "gif 0.13.3",
@@ -6177,7 +6177,7 @@ dependencies = [
 
 [[package]]
 name = "ps-wasm"
-version = "2026.5.28"
+version = "2026.5.29"
 dependencies = [
  "console_error_panic_hook",
  "getrandom 0.4.2",
@@ -6217,7 +6217,7 @@ checksum = "e0c5ccf5294c6ccd63a74f1565028353830a9c2f5eb0c682c355c471726a6e3f"
 
 [[package]]
 name = "qberry-cli"
-version = "2026.5.28"
+version = "2026.5.29"
 dependencies = [
  "anyhow",
  "clap",
@@ -6238,7 +6238,7 @@ dependencies = [
 
 [[package]]
 name = "qberry-core"
-version = "2026.5.28"
+version = "2026.5.29"
 dependencies = [
  "accessibility-sys",
  "actix",
@@ -6300,7 +6300,7 @@ dependencies = [
 
 [[package]]
 name = "qberry-gui"
-version = "2026.5.28"
+version = "2026.5.29"
 dependencies = [
  "anyhow",
  "clap",
@@ -6324,7 +6324,7 @@ dependencies = [
 
 [[package]]
 name = "qberry-wasm"
-version = "2026.5.28"
+version = "2026.5.29"
 dependencies = [
  "anyhow",
  "argon2",
@@ -6361,7 +6361,7 @@ dependencies = [
 
 [[package]]
 name = "qd-core"
-version = "2026.5.28"
+version = "2026.5.29"
 dependencies = [
  "bitflags 2.11.1",
  "cairo-rs 0.19.4",
@@ -6369,7 +6369,7 @@ dependencies = [
 
 [[package]]
 name = "qd-wasm"
-version = "2026.5.28"
+version = "2026.5.29"
 dependencies = [
  "console_error_panic_hook",
  "getrandom 0.2.17",
@@ -6433,7 +6433,7 @@ dependencies = [
  "quinn-udp",
  "rustc-hash 2.1.2",
  "rustls",
- "socket2 0.6.3",
+ "socket2 0.6.4",
  "thiserror 2.0.18",
  "tokio",
  "tracing",
@@ -6471,7 +6471,7 @@ dependencies = [
  "cfg_aliases 0.2.1",
  "libc",
  "once_cell",
- "socket2 0.6.3",
+ "socket2 0.6.4",
  "tracing",
  "windows-sys 0.60.2",
 ]
@@ -7673,9 +7673,9 @@ dependencies = [
 
 [[package]]
 name = "socket2"
-version = "0.6.3"
+version = "0.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3a766e1110788c36f4fa1c2b71b387a7815aa65f88ce0229841826633d93723e"
+checksum = "52d1cfed4120b4d927bf7c0f86d2087a4a7d6027c906d9f9d525a80573b9be51"
 dependencies = [
  "libc",
  "windows-sys 0.61.2",
@@ -8552,7 +8552,7 @@ dependencies = [
  "parking_lot",
  "pin-project-lite",
  "signal-hook-registry",
- "socket2 0.6.3",
+ "socket2 0.6.4",
  "tokio-macros",
  "windows-sys 0.61.2",
 ]
