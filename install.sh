@@ -258,6 +258,7 @@ EOF
 # Patch Mach-O LC_BUILD_VERSION minos so Finder allows launch on older macOS.
 # The release binary is often compiled with minos 13.0; the terminal ignores this
 # check but Finder enforces it, producing "requires macOS 13.0 or later".
+# Note: this invalidates the code signature — the caller MUST re-sign afterwards.
 patch_macos_min_version() {
   local bin="$1" target="${2:-12.0}"
   if ! command -v vtool >/dev/null 2>&1; then
@@ -270,15 +271,53 @@ patch_macos_min_version() {
   log "Patching Mach-O minos: ${cur} → ${target} in $(basename "$bin")"
   vtool -set-build-version macos "$target" "$target" -replace -output "$bin" "$bin" 2>/dev/null \
     || warn "vtool patch failed — app bundle may still require macOS 13+"
-  # vtool modifies the binary and breaks its code signature; re-sign ad-hoc so
-  # macOS TCC (Screen Recording, etc.) can re-identify the app bundle correctly.
-  if command -v codesign >/dev/null 2>&1; then
-    codesign --force --sign - "$bin" 2>/dev/null \
-      || warn "codesign ad-hoc re-sign failed — Screen Recording permission may not be retained"
-    log "Ad-hoc re-signed: $(basename "$bin")"
-  else
-    warn "codesign not found — Screen Recording permission may not work after minos patch"
+}
+
+# Sign inner binary then bundle, both with identifier-pinned designated requirement.
+# Avoid --deep: it re-signs nested code with the default (cdhash) DR, which
+# overwrites the identifier-pinned DR on the inner binary and causes TCC to
+# invalidate Screen Recording / Accessibility grants on every reinstall.
+sign_bundle_macos() {
+  if ! command -v codesign >/dev/null 2>&1; then
+    warn "codesign not found — TCC permissions (Screen Recording / Accessibility) will not survive reinstall"
+    return
   fi
+  local dr="=designated => identifier \"${PLIST_LABEL}\""
+  # 1. Sign inner binary first so its DR is identifier-pinned.
+  if ! codesign --force --sign - --requirements "$dr" "$BUNDLE_BIN" 2>/dev/null; then
+    warn "Inner binary signing failed — falling back to plain ad-hoc"
+    codesign --force --sign - "$BUNDLE_BIN" 2>/dev/null || \
+      warn "Inner binary ad-hoc sign failed"
+  fi
+  # 2. Sign bundle (no --deep) so the inner DR set above is preserved.
+  if codesign --force --sign - --requirements "$dr" "${APP_BUNDLE}" 2>/dev/null; then
+    log "App bundle signed 🔏 (identifier-pinned DR): ${APP_BUNDLE}"
+  else
+    warn "Identifier-pinned bundle signing failed — falling back to default ad-hoc"
+    codesign --force --sign - "${APP_BUNDLE}" 2>/dev/null || \
+      warn "Bundle ad-hoc sign failed — Screen Recording permission may not work"
+  fi
+}
+
+# Reset stale TCC entries pinned to the previous install's cdhash. Without this,
+# a leftover row in TCC.db with the old code requirement can mask the new grant
+# and produce the "checkbox is on but capture fails" symptom.
+reset_tcc_macos() {
+  if ! command -v tccutil >/dev/null 2>&1; then
+    return
+  fi
+  log "Resetting stale TCC entries 🧼 (Screen Recording / Accessibility)"
+  tccutil reset ScreenCapture "${PLIST_LABEL}" 2>/dev/null || true
+  tccutil reset Accessibility "${PLIST_LABEL}" 2>/dev/null || true
+}
+
+# Drop Finder/Dock icon caches so the new bundle icon shows up immediately.
+refresh_icon_cache_macos() {
+  rm -rf /Library/Caches/com.apple.iconservices.store 2>/dev/null || true
+  find /private/var/folders -name com.apple.dock.iconcache -delete 2>/dev/null || true
+  find /private/var/folders -name com.apple.iconservices -delete 2>/dev/null || true
+  killall Dock 2>/dev/null || true
+  killall Finder 2>/dev/null || true
 }
 
 # Open System Settings > Privacy > Screen Recording and Accessibility so the user can grant access.
@@ -435,23 +474,18 @@ install_main() {
       warn "QBerry.icns not found in archive — app icon will be blank"
     fi
 
-    # Patch minos on the binary, then sign the entire bundle (binary + Info.plist + Resources).
-    # Bundle-level signing is required for TCC (Screen Recording) to recognise the app.
-    #
-    # Use a bundle-ID-only designated requirement instead of the default hash-based one.
-    # This makes TCC key the permission on the bundle identifier rather than the binary hash,
-    # so granted permissions survive binary updates without requiring re-approval.
+    # Patch minos on the binary, then sign inner-then-outer with identifier-pinned DR.
+    # Bundle-level signing is required for TCC (Screen Recording / Accessibility)
+    # to recognise the app. Identifier-pinned DR (vs. default cdhash) lets the
+    # grant survive binary updates without requiring re-approval — provided we
+    # avoid --deep, which would overwrite the inner DR back to cdhash.
     patch_macos_min_version "$BUNDLE_BIN" "12.0"
-    if command -v codesign >/dev/null 2>&1; then
-      local dr="=designated => identifier \"${PLIST_LABEL}\""
-      if codesign --force --deep --sign - --requirements "$dr" "${APP_BUNDLE}" 2>/dev/null; then
-        log "App bundle signed 🔏 (identifier-pinned DR): ${APP_BUNDLE}"
-      else
-        warn "Identifier-pinned signing failed — falling back to default ad-hoc sign"
-        codesign --force --deep --sign - "${APP_BUNDLE}" 2>/dev/null \
-          || warn "Bundle signing failed — Screen Recording permission may not work"
-      fi
-    fi
+    sign_bundle_macos
+
+    # Clear stale TCC entries from any previous install (cdhash-pinned grants
+    # left over from older install.sh versions will silently block the new bundle).
+    reset_tcc_macos
+    refresh_icon_cache_macos
 
     install -d -m 0755 "$BIN_DIR"
     ln -sf "$BUNDLE_BIN" "${BIN_PATH}"
@@ -536,10 +570,16 @@ EOF
     sudo launchctl unload ${PLIST_PATH} && sudo launchctl load -w ${PLIST_PATH}
     tail -f /var/log/${SERVICE_NAME}.log
 
-  ⚠️  Screen Recording permission required for remote desktop:
-    System Settings > Privacy & Security > Screen Recording > enable QBerry
-    (System Settings should have opened automatically — restart the service after granting.)
-    sudo launchctl unload ${PLIST_PATH} && sudo launchctl load -w ${PLIST_PATH}
+  ⚠️  Two TCC permissions are required for remote desktop:
+    System Settings > Privacy & Security > Screen Recording   > enable "QBerry"
+    System Settings > Privacy & Security > Accessibility      > "+" /Applications/QBerry.app, enable
+    (System Settings should have opened automatically.)
+
+    IMPORTANT:
+      - Grant ONLY the "QBerry" app entry. Do NOT add /usr/local/bin/qberry
+        (it is a symlink and TCC will not honor it).
+      - Restart the service after granting:
+          sudo launchctl unload ${PLIST_PATH} && sudo launchctl load -w ${PLIST_PATH}
 EOF
   else
     cat <<EOF
