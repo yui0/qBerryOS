@@ -9,6 +9,7 @@ members = [
     "ps-wasm",
     "qd-core",
     "qd-wasm",
+    "vchange",
 ]
 resolver = "2"
 repository = "https://github.com/yui0/qkey"
