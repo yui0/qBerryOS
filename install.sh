@@ -281,13 +281,18 @@ patch_macos_min_version() {
   fi
 }
 
-# Open System Settings > Privacy > Screen Recording so the user can grant access.
+# Open System Settings > Privacy > Screen Recording and Accessibility so the user can grant access.
 open_screen_recording_prefs() {
   local real_user="${SUDO_USER:-}"
   [ -z "$real_user" ] && return
   log "Opening Screen Recording preferences 🖥️ — please enable QBerry and restart the service."
   sudo -u "$real_user" open \
     "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture" \
+    2>/dev/null || true
+  sleep 1
+  log "Opening Accessibility preferences ♿ — please enable QBerry for keyboard/mouse control."
+  sudo -u "$real_user" open \
+    "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility" \
     2>/dev/null || true
 }
 
@@ -400,6 +405,17 @@ install_main() {
   [ -n "${src_bin:-}" ] && [ -f "$src_bin" ] || die "Could not find ${BIN_NAME} in the archive"
 
   if [ "$os" = "macos" ]; then
+    # Stop existing service and remove old bundle before update to avoid stale files
+    # and ensure the new code signature is registered cleanly with TCC.
+    local is_upgrade=0
+    if [ -d "$APP_BUNDLE" ]; then
+      is_upgrade=1
+      log "Existing install detected — stopping service and removing old bundle 🗑️"
+      launchctl unload "${PLIST_PATH}" 2>/dev/null || true
+      sleep 1
+      rm -rf "$APP_BUNDLE"
+    fi
+
     # Install binary inside the app bundle; symlink from BIN_PATH for CLI convenience
     log "Installing 🚀: ${BUNDLE_BIN}"
     mkdir -p "${APP_BUNDLE}/Contents/MacOS"
@@ -419,16 +435,22 @@ install_main() {
       warn "QBerry.icns not found in archive — app icon will be blank"
     fi
 
-    # Patch minos on the binary, then sign the entire bundle (binary + Info.plist + Resources)
+    # Patch minos on the binary, then sign the entire bundle (binary + Info.plist + Resources).
     # Bundle-level signing is required for TCC (Screen Recording) to recognise the app.
+    #
+    # Use a bundle-ID-only designated requirement instead of the default hash-based one.
+    # This makes TCC key the permission on the bundle identifier rather than the binary hash,
+    # so granted permissions survive binary updates without requiring re-approval.
     patch_macos_min_version "$BUNDLE_BIN" "12.0"
     if command -v codesign >/dev/null 2>&1; then
-      codesign --force --deep --sign - "${APP_BUNDLE}" 2>/dev/null \
-        && log "App bundle signed 🔏: ${APP_BUNDLE}" \
-        || warn "Bundle signing failed — Screen Recording permission may not work"
-      warn "If Screen Recording or Accessibility permission is not recognised, run manually:"
-      warn "  sudo tccutil reset ScreenCapture ${PLIST_LABEL}"
-      warn "  sudo tccutil reset Accessibility  ${PLIST_LABEL}"
+      local dr="=designated => identifier \"${PLIST_LABEL}\""
+      if codesign --force --deep --sign - --requirements "$dr" "${APP_BUNDLE}" 2>/dev/null; then
+        log "App bundle signed 🔏 (identifier-pinned DR): ${APP_BUNDLE}"
+      else
+        warn "Identifier-pinned signing failed — falling back to default ad-hoc sign"
+        codesign --force --deep --sign - "${APP_BUNDLE}" 2>/dev/null \
+          || warn "Bundle signing failed — Screen Recording permission may not work"
+      fi
     fi
 
     install -d -m 0755 "$BIN_DIR"
