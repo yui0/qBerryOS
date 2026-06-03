@@ -6362,6 +6362,7 @@ dependencies = [
 name = "qd-core"
 version = "2026.6.3"
 dependencies = [
+ "ab_glyph",
  "bitflags 2.11.1",
  "cairo-rs 0.19.4",
 ]
