@@ -5,14 +5,15 @@ members = [
     "qberry-gui/src-tauri",
     #"qberry-ui",
     "qberry-wasm",
-    "ps-core",
-    "ps-wasm",
-    "qd-core",
-    "qd-wasm",
+    "apps/ps-core",
+    "apps/ps-wasm",
+    "apps/qd-core",
+    "apps/qd-wasm",
+    "apps/vchange",
 ]
 resolver = "2"
-repository = "https://github.com/yui0/qkey"
-homepage = "https://github.com/yui0/qkey"
+repository = "https://github.com/yui0/fqkey"
+homepage = "https://github.com/yui0/qfkey"
 authors = ["Yuichiro Nakada"]
 description = "QFKEY Post-Quantum Mesh VPN"
 license = "UNLICENSED"
