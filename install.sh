@@ -51,6 +51,7 @@ PROFILE_PASSWORD="${QFKEY_PROFILE_PASSWORD:-}"
 NO_SERVICE="${QFKEY_NO_SERVICE:-0}"
 NO_START="${QFKEY_NO_START:-0}"
 DO_UNINSTALL=0
+IS_UPGRADE=0
 _TMP=""
 
 log()  { printf '\033[1;34m==>\033[0m %s\n' "$*"; }
@@ -394,7 +395,10 @@ setup_service() {
 
   if [ "$os" = "macos" ]; then
     write_service_macos
-    open_screen_recording_prefs
+    # Open privacy settings only on fresh install; upgrades keep existing TCC grants.
+    if [ "$IS_UPGRADE" = "0" ]; then
+      open_screen_recording_prefs
+    fi
     if [ "$NO_START" = "1" ]; then
       log "Skipping launchd load because --no-start was specified 💤"
     else
@@ -449,9 +453,8 @@ install_main() {
   if [ "$os" = "macos" ]; then
     # Stop existing service and remove old bundle before update to avoid stale files
     # and ensure the new code signature is registered cleanly with TCC.
-    local is_upgrade=0
     if [ -d "$APP_BUNDLE" ]; then
-      is_upgrade=1
+      IS_UPGRADE=1
       log "Existing install detected — stopping service and removing old bundle 🗑️"
       launchctl unload "${PLIST_PATH}" 2>/dev/null || true
       sleep 1
@@ -485,9 +488,13 @@ install_main() {
     patch_macos_min_version "$BUNDLE_BIN" "12.0"
     sign_bundle_macos
 
-    # Clear stale TCC entries from any previous install (cdhash-pinned grants
-    # left over from older install.sh versions will silently block the new bundle).
-    reset_tcc_macos
+    # On fresh install: reset any stale TCC entries (cdhash-pinned grants from
+    # older install.sh versions can silently block the new bundle).
+    # On upgrade: identifier-pinned DR preserves TCC grants — do NOT reset or
+    # the user will be prompted to re-grant Screen Recording / Accessibility.
+    if [ "$IS_UPGRADE" = "0" ]; then
+      reset_tcc_macos
+    fi
     refresh_icon_cache_macos
 
     install -d -m 0755 "$BIN_DIR"
@@ -572,6 +579,9 @@ EOF
     sudo launchctl list | grep ${PLIST_LABEL}
     sudo launchctl unload ${PLIST_PATH} && sudo launchctl load -w ${PLIST_PATH}
     tail -f /var/log/${SERVICE_NAME}.log
+EOF
+    if [ "$IS_UPGRADE" = "0" ]; then
+      cat <<EOF
 
   ⚠️  Two TCC permissions are required for remote desktop:
     System Settings > Privacy & Security > Screen Recording   > enable "QBerry"
@@ -584,6 +594,7 @@ EOF
       - Restart the service after granting:
           sudo launchctl unload ${PLIST_PATH} && sudo launchctl load -w ${PLIST_PATH}
 EOF
+    fi
   else
     cat <<EOF
     sudo systemctl status ${SERVICE_NAME}
