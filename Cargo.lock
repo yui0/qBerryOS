@@ -6164,7 +6164,7 @@ dependencies = [
 
 [[package]]
 name = "ps-core"
-version = "2026.6.11"
+version = "0.1.0"
 dependencies = [
  "fontdue",
  "gif 0.13.3",
@@ -6176,7 +6176,7 @@ dependencies = [
 
 [[package]]
 name = "ps-wasm"
-version = "2026.6.11"
+version = "0.1.0"
 dependencies = [
  "console_error_panic_hook",
  "getrandom 0.4.2",
@@ -6216,11 +6216,11 @@ checksum = "e0c5ccf5294c6ccd63a74f1565028353830a9c2f5eb0c682c355c471726a6e3f"
 
 [[package]]
 name = "qberry-cli"
-version = "2026.6.11"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap",
- "dirs 5.0.1",
+ "dirs 6.0.0",
  "env_logger 0.11.10",
  "fs2",
  "log",
@@ -6228,7 +6228,7 @@ dependencies = [
  "open",
  "qberry-core",
  "tokio",
- "toml 0.5.11",
+ "toml 1.1.2+spec-1.1.0",
  "tray-icon 0.17.0",
  "windows-service",
  "windows-sys 0.52.0",
@@ -6238,7 +6238,7 @@ dependencies = [
 
 [[package]]
 name = "qberry-core"
-version = "2026.6.11"
+version = "0.1.0"
 dependencies = [
  "accessibility-sys",
  "actix",
@@ -6248,12 +6248,12 @@ dependencies = [
  "anyhow",
  "arboard",
  "argon2",
- "base64 0.21.7",
+ "base64 0.22.1",
  "bytes",
  "clap",
- "core-foundation 0.9.4",
+ "core-foundation 0.10.1",
  "core-foundation-sys",
- "core-graphics 0.23.2",
+ "core-graphics 0.25.0",
  "dashmap",
  "dxgi-capture-rs",
  "enigo",
@@ -6265,13 +6265,13 @@ dependencies = [
  "governor",
  "hostname",
  "image",
- "jni 0.21.1",
+ "jni 0.22.4",
  "just-webrtc",
  "lazy_static",
  "libcrux-ml-kem",
  "log",
  "lz4_flex",
- "nix 0.26.4",
+ "nix 0.31.3",
  "nonzero_ext",
  "once_cell",
  "portable-pty",
@@ -6285,7 +6285,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tokio",
- "toml 0.5.11",
+ "toml 1.1.2+spec-1.1.0",
  "trust-dns-proto",
  "tun-rs",
  "turbojpeg",
@@ -6293,17 +6293,17 @@ dependencies = [
  "v4l",
  "vpx-rs",
  "webbrowser",
- "windows 0.61.3",
+ "windows 0.62.2",
  "winres",
 ]
 
 [[package]]
 name = "qberry-gui"
-version = "2026.6.11"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap",
- "jni 0.21.1",
+ "jni 0.22.4",
  "log",
  "qberry-core",
  "serde",
@@ -6318,16 +6318,16 @@ dependencies = [
  "tauri-plugin-qberry",
  "tauri-plugin-shell",
  "tokio",
- "toml 0.5.11",
+ "toml 1.1.2+spec-1.1.0",
 ]
 
 [[package]]
 name = "qberry-wasm"
-version = "2026.6.11"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "argon2",
- "base64 0.21.7",
+ "base64 0.22.1",
  "bytes",
  "clap",
  "console_error_panic_hook",
@@ -6360,7 +6360,7 @@ dependencies = [
 
 [[package]]
 name = "qd-core"
-version = "2026.6.11"
+version = "0.1.0"
 dependencies = [
  "ab_glyph",
  "bitflags 2.13.0",
@@ -6369,7 +6369,7 @@ dependencies = [
 
 [[package]]
 name = "qd-wasm"
-version = "2026.6.11"
+version = "0.1.0"
 dependencies = [
  "console_error_panic_hook",
  "getrandom 0.2.17",
@@ -9236,7 +9236,7 @@ checksum = "ba73ea9cf16a25df0c8caa16c51acb937d5712a8429db78a3ee29d5dcacd3a65"
 
 [[package]]
 name = "vchange"
-version = "2026.6.11"
+version = "0.1.0"
 dependencies = [
  "console_error_panic_hook",
  "getrandom 0.2.17",
