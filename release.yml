@@ -1,0 +1,365 @@
+name: Rust Release & Deploy
+
+on:
+  push:
+    tags:
+      - '*-*-*'  # git tag v1.2.3 && git push --tags でトリガー
+
+permissions:
+  contents: write  # GitHub Releases へのアセットアップロードに必要
+
+jobs:
+  build:
+    name: Build ${{ matrix.artifact_name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+
+          # ── qberry-cli (server: トレイなし・XCB 依存なし、Linux デフォルト)
+          - os: ubuntu-24.04
+            target: x86_64-unknown-linux-gnu
+            artifact_name: qberry-cli-linux-x86_64
+            crate: qberry-cli
+            bin: qberry-cli
+            features: ""
+            xcb: false
+            cross: false
+            rustflags: "-C target-cpu=x86-64"
+
+          - os: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-gnu
+            artifact_name: qberry-cli-linux-aarch64
+            crate: qberry-cli
+            bin: qberry-cli
+            features: ""
+            xcb: false
+            cross: false
+            rustflags: "-C target-cpu=generic"
+
+          # ── qberry (desktop: トレイアイコン + リモートデスクトップ)
+          - os: ubuntu-24.04
+            target: x86_64-unknown-linux-gnu
+            artifact_name: qberry-linux-x86_64
+            crate: qberry-cli
+            bin: qberry
+            features: "desktop"
+            xcb: true
+            cross: false
+            rustflags: "-C target-cpu=x86-64"
+
+          - os: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-gnu
+            artifact_name: qberry-linux-aarch64
+            crate: qberry-cli
+            bin: qberry
+            features: "desktop"
+            xcb: true
+            cross: false
+            rustflags: "-C target-cpu=generic"
+
+          - os: macos-15
+            target: x86_64-apple-darwin
+            artifact_name: qberry-macos-x86_64
+            crate: qberry-cli
+            bin: qberry
+            features: ""
+            xcb: false
+            cross: false
+            rustflags: "-C target-cpu=x86-64"
+
+          - os: macos-14
+            target: aarch64-apple-darwin
+            artifact_name: qberry-macos-arm64
+            crate: qberry-cli
+            bin: qberry
+            features: ""
+            xcb: false
+            cross: false
+            rustflags: "-C target-cpu=generic"
+
+          - os: windows-2022
+            target: x86_64-pc-windows-msvc
+            artifact_name: qberry-windows-x86_64
+            crate: qberry-cli
+            bin: qberry
+            features: ""
+            xcb: false
+            cross: false
+            rustflags: "-C target-cpu=x86-64"
+
+          # ── qberry-wasm
+          - os: ubuntu-24.04
+            target: wasm32-unknown-unknown
+            artifact_name: qberry-wasm
+            crate: qberry-wasm
+            bin: ""
+            features: ""
+            xcb: false
+            cross: false
+            wasm: true
+            rustflags: ""
+
+          # ── qberry-gui (Tauri: 将来用)
+          # - os: ubuntu-24.04
+          #   target: x86_64-unknown-linux-gnu
+          #   artifact_name: qberry-gui-linux-x86_64
+          #   crate: qberry-gui/src-tauri
+          #   bin: qberry-gui
+          #   features: ""
+          #   xcb: false
+          #   cross: false
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set dynamic version (YYYY.M.D)
+        shell: bash
+        run: |
+          CURRENT_TIME=$(date +%Y.%-m.%-d)
+          echo "Setting version to: $CURRENT_TIME"
+          echo "APP_VERSION=$CURRENT_TIME" >> $GITHUB_ENV
+
+          find . -name "Cargo.toml" -not -path "./target/*" -print0 | \
+            xargs -0 sed -i.bak "s/version = \"0.1.0\"/version = \"$CURRENT_TIME\"/g"
+
+          find . -name "*.bak" -delete
+
+      - name: Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install Linux build dependencies
+        if: runner.os == 'Linux' && !matrix.wasm
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            build-essential nasm cmake libclang-dev \
+            pkg-config libssl-dev \
+            libwayland-dev libegl-dev libegl1-mesa-dev libgbm-dev \
+            libpipewire-0.3-dev
+
+      - name: Install XCB libraries (desktop builds only)
+        if: matrix.xcb
+        run: |
+          sudo apt-get install -y --no-install-recommends \
+            libxcb1-dev libxcb-shm0-dev libxcb-randr0-dev
+
+      - name: Install cross
+        if: matrix.cross
+        run: cargo install cross --git https://github.com/cross-rs/cross
+
+      - name: Install wasm-pack & binaryen
+        if: matrix.wasm
+        run: |
+          cargo install wasm-pack
+          sudo apt-get install -y binaryen
+
+      - name: Setup Node.js
+        if: matrix.wasm
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'latest'
+
+      - name: Install NASM
+        if: runner.os == 'Windows'
+        uses: ilammy/setup-nasm@v1
+
+      - name: Install NSIS
+        if: runner.os == 'Windows' && !matrix.wasm
+        run: choco install nsis --no-progress -y
+
+      - name: Install NASM (macOS)
+        if: runner.os == 'macOS'
+        run: brew install nasm
+
+      - name: Cache
+        uses: Swatinem/rust-cache@v2
+
+      # ── WASM
+      - name: Build (wasm)
+        if: matrix.wasm
+        shell: bash
+        working-directory: qberry-wasm
+        run: |
+            mkdir -p ../artifacts/pkg
+            wasm-pack build \
+              --release --target web \
+              --out-dir "../artifacts/pkg"
+            wasm-opt -Oz \
+              -o "../artifacts/pkg/qberry_wasm_bg.wasm" \
+              "../artifacts/pkg/qberry_wasm_bg.wasm"
+            bash _build.sh
+            mv dist ../artifacts/
+
+      # ── ネイティブビルド
+      - name: Build (native)
+        if: ${{ !matrix.wasm && !matrix.cross }}
+        shell: bash
+        env:
+          RUSTFLAGS: ${{ matrix.rustflags }}
+          MACOSX_DEPLOYMENT_TARGET: ${{ runner.os == 'macOS' && '12.0' || '' }}
+        run: |
+          FEATURES_FLAG=""
+          [[ -n "${{ matrix.features }}" ]] && FEATURES_FLAG="--features ${{ matrix.features }}"
+          cargo build --release \
+            -p ${{ matrix.crate }} \
+            --bin ${{ matrix.bin }} \
+            --target ${{ matrix.target }} \
+            $FEATURES_FLAG
+
+      # ── クロスコンパイル
+      - name: Build (cross)
+        if: ${{ !matrix.wasm && matrix.cross }}
+        shell: bash
+        env:
+          RUSTFLAGS: ${{ matrix.rustflags }}
+        run: |
+          FEATURES_FLAG=""
+          [[ -n "${{ matrix.features }}" ]] && FEATURES_FLAG="--features ${{ matrix.features }}"
+          cross build --release \
+            -p ${{ matrix.crate }} \
+            --bin ${{ matrix.bin }} \
+            --target ${{ matrix.target }} \
+            $FEATURES_FLAG
+
+      - name: Collect binary
+        if: ${{ !matrix.wasm }}
+        shell: bash
+        run: |
+          mkdir -p artifacts
+          if [[ "${{ matrix.target }}" == *windows* ]]; then
+            cp "target/${{ matrix.target }}/release/${{ matrix.bin }}.exe" artifacts/
+          else
+            cp "target/${{ matrix.target }}/release/${{ matrix.bin }}" artifacts/
+          fi
+
+      - name: Build Windows installer (NSIS)
+        if: runner.os == 'Windows' && !matrix.wasm
+        shell: bash
+        run: |
+          cp "target/${{ matrix.target }}/release/${{ matrix.bin }}.exe" win/qberry.exe
+          cd win
+          makensis -DVERSION="${{ env.APP_VERSION }}" installer.nsi
+
+      - name: Package artifact
+        shell: bash
+        run: |
+          if [ -f "qberry.toml" ]; then
+            cp qberry.toml artifacts/
+          fi
+          if [[ "${{ matrix.wasm }}" == "true" ]]; then
+            tar -czf "${{ matrix.artifact_name }}.tar.gz" -C artifacts dist
+          elif [[ "${{ matrix.target }}" == *windows* ]]; then
+            if [ -d "win" ] && [ "$(ls -A win/*.dll 2>/dev/null)" ]; then
+              cp win/*.dll artifacts/
+            fi
+            cd artifacts && powershell -Command "Compress-Archive -Path * -DestinationPath ../${{ matrix.artifact_name }}.zip"
+          else
+            if [[ "${{ matrix.target }}" == *apple* ]] && [ -f logo/QBerry.icns ]; then
+              cp logo/QBerry.icns artifacts/
+            fi
+            tar -czf "${{ matrix.artifact_name }}.tar.gz" -C artifacts .
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.artifact_name }}.*
+
+      - name: Upload Windows installer
+        if: runner.os == 'Windows' && !matrix.wasm
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}-setup
+          path: win/QFKEY-Setup-*.exe
+
+  # ── GitHub Release
+  release:
+    needs: build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create GitHub Release & upload assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: artifacts/**/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ── SSH deploy
+  deploy-ssh:
+    needs: release
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Upload all artifacts via SCP
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DEPLOY_SSH_HOST }}
+          username: ${{ secrets.DEPLOY_SSH_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_SSH_PORT || 22 }}
+          source: "artifacts/**/*"
+          target: ${{ secrets.DEPLOY_TARGET_DIR || '/opt/qberry/releases' }}/${{ github.ref_name }}
+          strip_components: 1
+
+      - name: Post-deploy script via SSH (展開 + シンボリックリンク)
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.DEPLOY_SSH_HOST }}
+          username: ${{ secrets.DEPLOY_SSH_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_SSH_PORT || 22 }}
+          envs: ${{ secrets.DEPLOY_TARGET_DIR }}
+          script: |
+            set -e
+
+            RELEASE_DIR="${DEPLOY_TARGET_DIR:-/opt/qberry/releases}/${{ github.ref_name }}"
+            CURRENT_DIR="${DEPLOY_TARGET_DIR:-/opt/qberry}/current"
+
+            echo "=== Deploying to: $RELEASE_DIR ==="
+
+            mkdir -p "$RELEASE_DIR"
+            cd "$RELEASE_DIR"
+
+            echo "Extracting archives..."
+            for file in *.tar.gz; do
+              if [ -f "$file" ]; then
+                echo "Extracting $file ..."
+                tar -xzf "$file"
+                rm "$file"
+              fi
+            done
+
+            for file in *.zip; do
+              if [ -f "$file" ]; then
+                echo "Extracting $file ..."
+                unzip -o "$file"
+                rm "$file"
+              fi
+            done
+
+            echo "Deployed files:"
+            ls -la "$RELEASE_DIR"
+
+            ln -sfn "$RELEASE_DIR" "$CURRENT_DIR"
+
+            #echo "Restarting qberry service..."
+            #systemctl restart qberry || true
+
+            echo "=== Deployment completed ==="
