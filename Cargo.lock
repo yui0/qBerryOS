@@ -6169,7 +6169,7 @@ dependencies = [
 
 [[package]]
 name = "ps-core"
-version = "2026.10.9"
+version = "2026.10.18"
 dependencies = [
  "fontdue",
  "gif 0.13.3",
@@ -6181,7 +6181,7 @@ dependencies = [
 
 [[package]]
 name = "ps-wasm"
-version = "2026.10.9"
+version = "2026.10.18"
 dependencies = [
  "console_error_panic_hook",
  "getrandom 0.4.3",
@@ -6221,7 +6221,7 @@ checksum = "e0c5ccf5294c6ccd63a74f1565028353830a9c2f5eb0c682c355c471726a6e3f"
 
 [[package]]
 name = "qberry-cli"
-version = "2026.10.9"
+version = "2026.10.18"
 dependencies = [
  "anyhow",
  "clap",
@@ -6243,7 +6243,7 @@ dependencies = [
 
 [[package]]
 name = "qberry-core"
-version = "2026.10.9"
+version = "2026.10.18"
 dependencies = [
  "accessibility-sys",
  "actix",
@@ -6305,7 +6305,7 @@ dependencies = [
 
 [[package]]
 name = "qberry-gui"
-version = "2026.10.9"
+version = "2026.10.18"
 dependencies = [
  "anyhow",
  "clap",
@@ -6329,7 +6329,7 @@ dependencies = [
 
 [[package]]
 name = "qberry-wasm"
-version = "2026.10.9"
+version = "2026.10.15"
 dependencies = [
  "anyhow",
  "argon2",
@@ -6366,7 +6366,7 @@ dependencies = [
 
 [[package]]
 name = "qd-core"
-version = "2026.10.9"
+version = "2026.10.18"
 dependencies = [
  "ab_glyph",
  "bitflags 2.13.0",
@@ -6375,7 +6375,7 @@ dependencies = [
 
 [[package]]
 name = "qd-wasm"
-version = "2026.10.9"
+version = "2026.10.18"
 dependencies = [
  "console_error_panic_hook",
  "getrandom 0.2.17",
@@ -9240,7 +9240,7 @@ checksum = "ba73ea9cf16a25df0c8caa16c51acb937d5712a8429db78a3ee29d5dcacd3a65"
 
 [[package]]
 name = "vchange"
-version = "2026.10.9"
+version = "2026.10.18"
 dependencies = [
  "console_error_panic_hook",
  "getrandom 0.2.17",
@@ -10600,7 +10600,7 @@ dependencies = [
 
 [[package]]
 name = "word-bridge"
-version = "2026.10.9"
+version = "2026.10.18"
 dependencies = [
  "serde_json",
  "word-core",
@@ -10608,7 +10608,7 @@ dependencies = [
 
 [[package]]
 name = "word-core"
-version = "2026.10.9"
+version = "2026.10.18"
 dependencies = [
  "serde",
  "serde_json",
@@ -10617,7 +10617,7 @@ dependencies = [
 
 [[package]]
 name = "word-wasm"
-version = "2026.10.9"
+version = "2026.10.18"
 dependencies = [
  "console_error_panic_hook",
  "serde-wasm-bindgen",
