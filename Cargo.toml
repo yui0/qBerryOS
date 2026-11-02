@@ -5,14 +5,12 @@ members = [
     "qberry-gui/src-tauri",
     #"qberry-ui",
     "qberry-wasm",
-    "apps/ps-core",
-    "apps/ps-wasm",
-    "apps/qd-core",
-    "apps/qd-wasm",
-    "apps/vchange",
-    "apps/WORD/word-core",
-    "apps/WORD/word-wasm",
-    "apps/WORD/word-bridge",
+    #"apps/ps-core",
+    #"apps/ps-wasm",
+    #"apps/qd-core",
+    #"apps/qd-wasm",
+    #"apps/vchange",
+    #"apps/WORD/word-core",
 ]
 resolver = "2"
 repository = "https://github.com/yui0/fqkey"
