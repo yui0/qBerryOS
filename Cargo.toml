@@ -31,6 +31,11 @@ toml = "*"
 just-webrtc = { path = "libs/just-webrtc" }
 scrap = { path = "libs/scrap" }
 
+# Keep file/line tables in release builds (no strip) so a stack dump of a hung process is readable.
+[profile.release]
+debug = "line-tables-only"
+strip = false
+
 [profile.small]
 inherits = "release"
 #debug = true
