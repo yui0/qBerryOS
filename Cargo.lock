@@ -6052,7 +6052,7 @@ checksum = "e0c5ccf5294c6ccd63a74f1565028353830a9c2f5eb0c682c355c471726a6e3f"
 
 [[package]]
 name = "qberry-cli"
-version = "2026.11.10"
+version = "2026.11.12"
 dependencies = [
  "anyhow",
  "clap",
@@ -6074,7 +6074,7 @@ dependencies = [
 
 [[package]]
 name = "qberry-core"
-version = "2026.11.10"
+version = "2026.11.12"
 dependencies = [
  "accessibility-sys",
  "actix",
@@ -6136,7 +6136,7 @@ dependencies = [
 
 [[package]]
 name = "qberry-gui"
-version = "2026.11.10"
+version = "2026.11.12"
 dependencies = [
  "anyhow",
  "clap",
@@ -6160,7 +6160,7 @@ dependencies = [
 
 [[package]]
 name = "qberry-wasm"
-version = "2026.11.10"
+version = "2026.11.12"
 dependencies = [
  "anyhow",
  "argon2",
